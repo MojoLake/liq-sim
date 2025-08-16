@@ -1,14 +1,11 @@
-# Ignore everything in backend by default
 /*
 
-# Allow source and config
 !.gitignore
 !Cargo.toml
 !Cargo.lock
 !/src/
 !/static/
 
-# Ignore build artifacts and generated files
 /target/
 **/*.log
 .DS_Store

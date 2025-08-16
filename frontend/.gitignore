@@ -1,7 +1,5 @@
-# Ignore everything in frontend by default
 /*
 
-# Allow top-level config and sources
 !.gitignore
 !package.json
 !yarn.lock
@@ -17,7 +15,6 @@
 !/public/
 !/wasm-lib/
 
-# Ignore build outputs and dependencies
 /node_modules/
 /dist/
 /.vite/
@@ -41,7 +38,6 @@ dist
 dist-ssr
 *.local
 
-# Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
