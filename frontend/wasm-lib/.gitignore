@@ -1,0 +1,20 @@
+# Ignore everything in wasm-lib by default
+/*
+
+# Allow Rust sources and cargo manifests
+!.gitignore
+!Cargo.toml
+!Cargo.lock
+!/src/
+
+# Ignore build artifacts for Rust and wasm
+/target/
+**/*.wasm
+**/*.rlib
+**/*.rmeta
+**/*.d
+**/*.o
+**/*.bin
+.DS_Store
+
+

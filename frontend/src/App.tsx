@@ -4,7 +4,7 @@ import LiquidKonva from './LiquidKonva';
 
 
 function App() {
-  const [amountOfParticles, setAmountOfParticles] = useState<number>(20);
+  const [amountOfParticles, setAmountOfParticles] = useState<number>(500);
   const [smoothingRadius, setSmoothingRadius] = useState<number>(10);
   const [dt, setDt] = useState<number>(100);
   const [on, setOn] = useState<boolean>(false);

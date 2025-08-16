@@ -27,8 +27,11 @@ struct ParticleWorld {
     height: f32,
     width: f32,
     particles: Vec<Particle>,
-    grid: Vec<Vec<f32>>,
+    gradient_grid_y: Vec<Vec<f32>>,
+    gradient_grid_x: Vec<Vec<f32>>,
     smoothing_radius: f32,
+    n: usize,
+    m: usize,
 }
 
 #[wasm_bindgen]
@@ -45,6 +48,7 @@ impl ParticleWorld{
     #[wasm_bindgen(constructor)]
     pub fn new(height: f32, width: f32, amount_particles: usize, smoothing_radius: f32, n: usize, m: usize) -> ParticleWorld {
         console_log!("amount balls: {amount_particles}");
+            
         let mut rng = rand::rng();
         let mut particles: Vec<Particle> = vec![];
         for _ in 0..amount_particles {
@@ -56,12 +60,15 @@ impl ParticleWorld{
             });
         }
 
-        ParticleWorld { height, width, particles, grid: vec![ vec![0.; m]; n], smoothing_radius }
+        ParticleWorld { height, width, particles, gradient_grid_y: vec![ vec![0.; m]; n], gradient_grid_x: vec![ vec![0.; m]; n], smoothing_radius, n, m }
     }
 
     pub fn tick(&mut self, dt: f32) {
         // self.calculate_grid();
         // self.calculate_directions(dt);
+        console_log!("n: {}", self.n);
+        console_log!("m: {}", self.m);
+        self.calculate_gradient_grid();
         for particle in &mut self.particles {
             Self::collission_detection(particle, self.height, self.width);
             Self::apply_gravity(particle, dt);
@@ -95,8 +102,24 @@ impl ParticleWorld{
         (y - p.y, x - p.x)
     }
 
+    fn calculate_gradient_grid(&mut self) {
+        let cell_width = self.width / (self.m as f32);
+        let cell_height = self.height / (self.n as f32);
+
+        for i in 0..self.n {
+            for j in 0..self.m {
+                let y: f32 = (i as f32 + 0.5) * cell_height;
+                let x: f32 = (j as f32 + 0.5) * cell_width;
+                let (gy, gx) = self.calculate_gradient(y, x);
+                self.gradient_grid_y[i][j] = gy;
+                self.gradient_grid_x[i][j] = gx;
+            }
+        }
+    }
+
+
     fn calculate_gradient(&self, y: f32, x: f32) -> (f32, f32) {
-        let step_size = 0.001;
+        let step_size = 0.01;
 
         let density_here = self.calculate_density(y, x);
         let delta_y = self.calculate_density(y + step_size, x) - density_here;
@@ -122,6 +145,10 @@ impl ParticleWorld{
         if r > self.smoothing_radius { 0. } else { 4. / (3.14 * self.smoothing_radius.powi(8)) * (self.smoothing_radius.powi(2) - r.powi(2)).powi(3) }
     }
 
+
+
+    // Functions to expose data to js:
+
     pub fn positions(&self, buf: &mut [f32]) {
         for (i, p) in self.particles.iter().enumerate() {
             buf[2 * i] = p.x;
@@ -136,7 +163,23 @@ impl ParticleWorld{
         }
     }
 
+    pub fn gradients_y(&self, buf: &mut [f32]) {
+        for i in 0..self.n {
+            for j in 0..self.m {
+                buf[i * self.m + j] = -self.gradient_grid_y[i][j];
+                // buf[i * self.m + j] = 1.;
+            }
+        }
+    }
 
+    pub fn gradients_x(&self, buf: &mut [f32]) {
+        for i in 0..self.n {
+            for j in 0..self.m {
+                buf[i * self.m + j] = self.gradient_grid_x[i][j];
+                // buf[i * self.m + j] = 1.;
+            }
+        }
+    }
 
 }
 

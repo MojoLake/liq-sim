@@ -1,6 +1,6 @@
 // LiquidKonva.tsx
 import React, { useState, useEffect, useRef } from "react";
-import { Stage, Layer, Circle, Rect } from "react-konva";
+import { Stage, Layer, Circle, Rect, Arrow } from "react-konva";
 import { useWasm } from "./hooks/useWasm";
 
 interface Particle {
@@ -8,6 +8,13 @@ interface Particle {
   y: number;
   dx: number;
   dy: number;
+}
+
+interface Gradient {
+  x: number;
+  y: number;
+  gx: number;
+  gy: number;
 }
 
 interface LiquidKonvaProps {
@@ -22,6 +29,8 @@ interface LiquidKonvaProps {
 type ParticleWorldInstance = {
   positions: (positionsBuf: Float32Array) => void;
   velocities: (velocitiesBuf: Float32Array) => void;
+  gradients_y: (gradientsYBuf: Float32Array) => void;
+  gradients_x: (gradientsXBuf: Float32Array) => void;
   tick: (dt: number) => void;
 };
 
@@ -40,6 +49,10 @@ const LiquidKonva = ({
   const [particles, setParticles] = useState<Particle[]>([]);
   const lastTimeRef = useRef<number>(0);
   const accumulatorRef = useRef<number>(0);
+  const [gradients, setGradients] = useState<Gradient[]>([]);
+
+  console.log("Height:", height);
+  console.log("Width:", width);
 
   const simulationOnRef = useRef(simulationOn);
   useEffect(() => {
@@ -51,20 +64,29 @@ const LiquidKonva = ({
     if (!wasm) return;
     if (worldRef.current) return;
 
+    const arrowsPerRow = 10;
+    const arrowPerCol = Math.ceil(arrowsPerRow * (height / width));
+    const cellWidth = width / arrowsPerRow;
+    const cellHeight = height / arrowPerCol;
+
+    console.log("Arrows per row:", arrowsPerRow);
+    console.log("Arrows per col:", arrowPerCol);
+
+    // debugger;
+
     worldRef.current = new wasm.ParticleWorld (
       height,
       width,
       amount_of_particles,
       smoothing_radius,
-      height,
-      width,
+      arrowPerCol,
+      arrowsPerRow,
     );
 
     const positionsBuf = new Float32Array(amount_of_particles * 2);
     const velocitiesBuf = new Float32Array(amount_of_particles * 2);
-
-    const arrowsPerRow = 10;
-    const arrowPerCol = arrowsPerRow * (height / width);
+    const gradientsXBuf = new Float32Array(arrowPerCol * arrowsPerRow);
+    const gradientsYBuf = new Float32Array(arrowPerCol * arrowsPerRow);
 
     lastTimeRef.current = performance.now();
     accumulatorRef.current = 0;
@@ -86,6 +108,9 @@ const LiquidKonva = ({
 
       worldRef.current.positions(positionsBuf);
       worldRef.current.velocities(velocitiesBuf);
+      worldRef.current.gradients_x(gradientsXBuf);
+      worldRef.current.gradients_y(gradientsYBuf);
+
 
       const newParticles: Particle[] = [];
       for (let i = 0; i < amount_of_particles; i++) {
@@ -98,6 +123,33 @@ const LiquidKonva = ({
       }
       console.log("dy:", newParticles[0].dy);
       setParticles(newParticles);
+
+      console.log("Length of gradientsXBuf:", gradientsXBuf.length);
+
+      const newGradients: Gradient[] = [];
+      for (let i = 0; i < arrowPerCol; i++) {
+        for (let j = 0; j < arrowsPerRow; j++) {
+            let pos_x = (j + 0.5) * cellWidth;
+            let pos_y = (i + 0.5) * cellHeight;
+            // console.log("i and j:", i, j);
+            // console.log("gradientsXBuf[i * width + j]: ", gradientsXBuf[i * width + j]);
+            newGradients.push({
+              x: pos_x,
+              y: pos_y,
+              gx: gradientsXBuf[i * arrowsPerRow + j],
+              gy: gradientsYBuf[i * arrowsPerRow + j],
+          });
+          }
+       }
+
+      console.log("Length of newGradients:", newGradients.length);
+      console.log("All gx's:");
+      newGradients.forEach( (g) => {
+        console.log(g.gx);
+      });
+      console.log("End of all gx's");
+
+      setGradients(newGradients);
 
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -119,6 +171,7 @@ const LiquidKonva = ({
     return `hsl(${hue}, 100%, 50%)`;
   }
 
+  const ARROW_SCALE = 10;
   return (
     <Stage width={width} height={height}>
       <Layer>
@@ -137,6 +190,19 @@ const LiquidKonva = ({
             />
           )
         })}
+      </Layer>
+      <Layer>
+        {gradients.map((g, i) => (
+          <Arrow
+            key={i}
+            points={[g.x, g.y, g.x + g.gx * ARROW_SCALE, g.y + g.gy * ARROW_SCALE]} 
+            pointerLength={8}
+            pointerWidth={6}
+            stroke="black"
+            fill="black"
+            strokeWidth={1}
+          />
+        ))}
       </Layer>
     </Stage>
   );

@@ -1,3 +1,32 @@
+# Ignore everything in frontend by default
+/*
+
+# Allow top-level config and sources
+!.gitignore
+!package.json
+!yarn.lock
+!pnpm-lock.yaml
+!package-lock.json
+!tsconfig.json
+!tsconfig.*.json
+!eslint.config.js
+!vite.config.ts
+!README.md
+!index.html
+!/src/
+!/public/
+!/wasm-lib/
+
+# Ignore build outputs and dependencies
+/node_modules/
+/dist/
+/.vite/
+/.turbo/
+/.parcel-cache/
+/.cache/
+**/*.log
+.DS_Store
+
 # Logs
 logs
 *.log

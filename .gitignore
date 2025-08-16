@@ -1,0 +1,12 @@
+# Ignore everything at the repository root by default
+/*
+
+# Keep these root files
+!.gitignore
+!README.md
+!LICENSE
+!yarn.lock
+
+# Allow project directories (each has its own .gitignore to whitelist contents)
+!/backend/
+!/frontend/
